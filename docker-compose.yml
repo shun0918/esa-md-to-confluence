@@ -1,0 +1,14 @@
+services:
+  ruby:
+    image: ruby:3.3.3
+    tty: true
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/app
+      - bundle:/usr/local/bundle
+    working_dir: /app
+    env_file: .env
+volumes:
+  bundle:
+    driver: local
