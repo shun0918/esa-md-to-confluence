@@ -27,6 +27,10 @@ class Confluence
     root_page
   end
 
+  def delete_all_pages
+    client.delete_all_pages
+  end
+
   private
 
   attr_reader :client
@@ -91,6 +95,52 @@ class Confluence
 
       puts "[SUCCESS] #{json}"
       json
+    end
+
+    def delete_all_pages
+      loop do
+        pages = fetch_pages
+        break if pages.empty?
+
+        delete_pages(pages)
+      end
+    end
+
+    def fetch_pages
+      response = client.get('/wiki/api/v2/pages') do |req|
+        req.headers['Content-Type'] = 'application/json'
+        req.params['limit'] = 100
+        req.params['space-id'] = @space_id
+      end
+      json = JSON.parse(response.body)
+      return json['results'] if response.status == 200
+
+      puts "[ERROR] #{json}"
+      exit 1
+    end
+
+    def delete_pages(pages)
+      pages.each { |page| puts "(#{page['spaceId']}) #{page['title']}" }
+      exit 1 unless confirmed?('Delete these pages?')
+
+      pages.each do |page|
+        raise '[ERROR] The space ID of the page is different.' unless page['spaceId'] == @space_id
+
+        response = client.delete("/wiki/api/v2/pages/#{page['id']}")
+
+        if response.status != 204
+          json = JSON.parse(response.body)
+          puts "[ERROR] #{json}"
+          exit 1
+        end
+
+        puts "[SUCCESS] Delete: #{page['title']}"
+      end
+    end
+
+    def confirmed?(text)
+      puts "#{text} [y/N]: "
+      gets.chomp == 'y'
     end
 
     private
