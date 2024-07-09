@@ -9,6 +9,7 @@ services:
       - bundle:/usr/local/bundle
     working_dir: /app
     env_file: .env
+    command: bash -c "bundle install"
 volumes:
   bundle:
     driver: local
