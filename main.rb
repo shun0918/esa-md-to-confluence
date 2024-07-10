@@ -9,7 +9,6 @@ confluence = Confluence.new(
   user: ENV.fetch('CONFLUENCE_USER'),
   token: ENV.fetch('CONFLUENCE_API_TOKEN'),
   space_id: ENV.fetch('CONFLUENCE_SPACE_ID'),
-  debug: true
 )
 
 target_dir = ARGV[0]

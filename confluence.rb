@@ -6,10 +6,9 @@ require 'redcarpet'
 
 # Confluence 用のクライアント
 class Confluence
-  def initialize(host:, user:, token:, space_id:, debug: false)
+  def initialize(host:, user:, token:, space_id:)
     @client = Client.new(host:, user:, token:, space_id:)
     @page_id_by_path = {}
-    @debug = debug
   end
 
   def create_page(original_title:, body:, dir:)
@@ -51,10 +50,6 @@ class Confluence
 
   def unique_suffix
     Time.now.to_i
-  end
-
-  def debug?
-    @debug
   end
 
   # Confluence API のクライアント
