@@ -20,12 +20,6 @@ class Confluence
     response
   end
 
-  def create_root_page(title)
-    root_page = client.create_page(title, '', nil)
-    @page_id_by_path[''] = root_page['id']
-    root_page
-  end
-
   def delete_all_pages
     client.delete_all_pages
   end

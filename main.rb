@@ -16,8 +16,6 @@ restart_at = ARGV[1]
 raise 'Please specify a directory within the `esa` directory' if target_dir.nil?
 raise "Directory `./esa/#{target_dir}` does not exist" unless Dir.exist?(target_dir)
 
-confluence.create_root_page("#{DateTime.now.new_offset('+09:00').strftime('%Y-%m-%d %H:%M:%S')}")
-
 skipping = !restart_at.nil?
 Dir.glob('./esa/**/*').each do |path|
   next unless path.match?('md$')
