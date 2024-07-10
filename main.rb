@@ -4,7 +4,7 @@ require 'date'
 require './confluence'
 require './esa'
 
-confluence = Confluence.new(
+confluence_client = Confluence.new(
   host: ENV.fetch('CONFLUENCE_HOST'),
   user: ENV.fetch('CONFLUENCE_USER'),
   token: ENV.fetch('CONFLUENCE_API_TOKEN'),
@@ -29,5 +29,5 @@ Dir.glob('./esa/**/*').each do |path|
     #{esa.meta_html}
     #{esa.body_html}
   BODY
-  confluence.create_page(title: esa.title, body:, dir: esa.dir || '')
+  confluence_client.create_page(title: esa.title, body:, dir: esa.dir || '')
 end
