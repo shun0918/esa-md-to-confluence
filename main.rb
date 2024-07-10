@@ -29,5 +29,5 @@ Dir.glob('./esa/**/*').each do |path|
     #{esa.meta_html}
     #{esa.body_html}
   BODY
-  confluence.create_page(original_title: esa.title, body:, dir: esa.dir || '')
+  confluence.create_page(title: esa.title, body:, dir: esa.dir || '')
 end

@@ -11,11 +11,11 @@ class Confluence
     @page_id_by_path = {}
   end
 
-  def create_page(original_title:, body:, dir:)
-    create_dir(dir) if dir_id(dir).nil?
+  def create_page(title:, body:, dir:)
+    create_dir(dir) if !dir.empty? && dir_id(dir).nil?
 
-    response = client.create_page("#{original_title}_#{unique_suffix}", body, dir_id(dir))
-    path = dir.empty? ? original_title : "#{dir}/#{original_title}"
+    response = client.create_page(title, body, dir_id(dir))
+    path = dir.empty? ? title : "#{dir}/#{title}"
     @page_id_by_path[path] = response['id']
     response
   end
@@ -39,11 +39,7 @@ class Confluence
     title = dir_list.pop
     parent_dir = dir_list.any? ? dir_list.join('/') : ''
 
-    create_page(original_title: title, body: '', dir: parent_dir)
-  end
-
-  def unique_suffix
-    Time.now.to_i
+    create_page(title:, body: '', dir: parent_dir)
   end
 
   # Confluence API のクライアント
@@ -76,6 +72,13 @@ class Confluence
         }.compact.to_json
       end
       json = JSON.parse(response.body)
+
+      if response.status == 400 &&
+         json['title'].match(/^A page with this title already exists/) &&
+         confirmed?("The page '#{title}' already exists. Do you want to overwrite it? [y/N]: ")
+        page = fetch_page_by_title(title)
+        return delete_page(page)
+      end
 
       if response.status != 200
         puts "[ERROR] #{json}"
@@ -112,19 +115,21 @@ class Confluence
       pages.each { |page| puts "(#{page['spaceId']}) #{page['title']}" }
       exit 1 unless confirmed?('Delete these pages?')
 
-      pages.each do |page|
-        raise '[ERROR] The space ID of the page is different.' unless page['spaceId'] == @space_id
+      pages.each { delete_page(_1) }
+    end
 
-        response = client.delete("/wiki/api/v2/pages/#{page['id']}")
+    def delete_page(page)
+      raise '[ERROR] The space ID of the page is different.' unless page['spaceId'] == @space_id
 
-        if response.status != 204
-          json = JSON.parse(response.body)
-          puts "[ERROR] #{json}"
-          exit 1
-        end
+      response = client.delete("/wiki/api/v2/pages/#{page['id']}")
 
-        puts "[SUCCESS] Delete: #{page['title']}"
+      if response.status != 204
+        json = JSON.parse(response.body)
+        puts "[ERROR] #{json}"
+        exit 1
       end
+
+      puts "[SUCCESS] Delete: #{page['title']}"
     end
 
     def confirmed?(text)
@@ -133,6 +138,19 @@ class Confluence
     end
 
     private
+
+    def fetch_page_by_title(title)
+      response = client.get('/wiki/api/v2/content') do |req|
+        req.headers['Content-Type'] = 'application/json'
+        req.params['title'] = title
+        req.params['space-id'] = @space_id
+      end
+      json = JSON.parse(response.body)
+      return json['results'].find { _1['title'] == title } if response.status == 200 && json['results'].any?
+
+      puts "[ERROR] #{json}"
+      exit 1
+    end
 
     attr_reader :client
   end
