@@ -74,11 +74,29 @@ class Confluence
       json = JSON.parse(response.body)
 
       if response.status == 400 &&
-         json['title'].match(/^A page with this title already exists/) &&
-         confirmed?("The page '#{title}' already exists. Do you want to overwrite it? [y/N]: ")
+         json['errors'][0]['title']&.match(/^A page with this title already exists/) &&
+         confirmed?("The page '#{title}' already exists. Do you want to overwrite it?")
         page = fetch_page_by_title(title)
-        return delete_page(page)
+        delete_page(page)
+        return create_page(title, body, parent_id)
       end
+
+      if response.status != 200
+        puts "[ERROR] #{json}"
+        exit 1
+      end
+
+      puts "[SUCCESS] #{json}"
+      json
+    end
+
+    def create_comment(page_id, body)
+      puts "[LOG] Create comment: to page #{page_id}"
+      response = client.post("/wiki/api/v2/footer-comments") do |req|
+        req.headers['Content-Type'] = 'application/json'
+        req.body = { "type": 'comment', "body": { "representation": 'storage', "value": body } }.to_json
+      end
+      json = JSON.parse(response.body)
 
       if response.status != 200
         puts "[ERROR] #{json}"
@@ -134,16 +152,18 @@ class Confluence
 
     def confirmed?(text)
       puts "#{text} [y/N]: "
-      gets.chomp == 'y'
+      $stdin.gets.chomp == 'y'
     end
 
     private
 
     def fetch_page_by_title(title)
-      response = client.get('/wiki/api/v2/content') do |req|
+      puts "[LOG] Fetch page: #{title}"
+      response = client.get('/wiki/api/v2/pages') do |req|
         req.headers['Content-Type'] = 'application/json'
         req.params['title'] = title
         req.params['space-id'] = @space_id
+        req.params['sort'] = 'title'
       end
       json = JSON.parse(response.body)
       return json['results'].find { _1['title'] == title } if response.status == 200 && json['results'].any?
