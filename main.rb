@@ -24,10 +24,14 @@ Dir.glob('./esa/**/*').each do |path|
   next if skipping
 
   p path
-  esa = Esa.new(path)
+  esa = Esa.new(path, token: ENV.fetch('ESA_PERSONAL_ACCESS_TOKEN'), team: ENV.fetch('ESA_TEAM'))
   body = <<~BODY
     #{esa.meta_html}
     #{esa.body_html}
   BODY
-  confluence_client.create_page(title: esa.title, body:, dir: esa.dir || '')
+  page = confluence_client.create_page(title: esa.title, body:, dir: esa.dir || '')
+
+  esa.comment_bodies_html.each do |comment|
+    confluence_client.create_comment(page['id'], comment)
+  end
 end

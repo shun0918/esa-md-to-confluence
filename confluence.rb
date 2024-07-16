@@ -24,6 +24,10 @@ class Confluence
     client.delete_all_pages
   end
 
+  def create_comment(page_id, body)
+    client.create_comment(page_id, body)
+  end
+
   private
 
   attr_reader :client
@@ -94,11 +98,15 @@ class Confluence
       puts "[LOG] Create comment: to page #{page_id}"
       response = client.post("/wiki/api/v2/footer-comments") do |req|
         req.headers['Content-Type'] = 'application/json'
-        req.body = { "type": 'comment', "body": { "representation": 'storage', "value": body } }.to_json
+        req.body = {
+          "type": 'comment',
+          "pageId": page_id,
+          "body": { "representation": 'storage', "value": body }
+        }.to_json
       end
       json = JSON.parse(response.body)
 
-      if response.status != 200
+      if response.status != 201
         puts "[ERROR] #{json}"
         exit 1
       end
